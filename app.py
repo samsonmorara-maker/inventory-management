@@ -34,36 +34,50 @@ def get_single_inventory(id):
 @app.route("/inventory", methods=["POST"])
 def create_inventory():
     data = request.get_json()
-    # Basic validation
-    required_fields = [
-        "product_name",
-        "brands",
-        "category",
-        "ingredients_text",
-        "barcode",
-        "quantity",
-        "price"
-    ]
+    if "barcode" not in data:
+        return jsonify({
+            "error": "Barcode is required"
+        }), 400
+    # Get product details from OpenFoodFacts
+    api_product = fetch_product_by_barcode(
+        data["barcode"]
+    )
+    if api_product is None:
+        return jsonify({
+            "error": "Product could not be found"
+        }), 404
 
-    for field in required_fields:
-        if field not in data:
-            return jsonify({
-                "error": f"{field} is required"
-            }), 400
-
-    # Create new inventory item
     new_item = {
         "id": len(inventory) + 1,
-        "product_name": data["product_name"],
-        "brands": data["brands"],
-        "category": data["category"],
-        "ingredients_text": data["ingredients_text"],
+        "product_name": api_product.get(
+            "product_name"
+        ),
+        "brands": api_product.get(
+            "brands"
+        ),
+        "category": api_product.get(
+            "categories"
+        ),
+        "ingredients_text": api_product.get(
+            "ingredients_text"
+        ),
+        "image_url": api_product.get(
+            "image_url"
+        ),
+
         "barcode": data["barcode"],
-        "quantity": data["quantity"],
-        "price": data["price"]
+        "quantity": data.get(
+            "quantity",
+            0
+        ),
+        "price": data.get(
+            "price",
+            0
+        )
     }
-
-
+    # Add to temporary storage
+    inventory.append(new_item)
+    return jsonify(new_item), 201
 @app.route("/inventory/<int:id>", methods=["PATCH"])
 def update_inventory(id):
     item = next(
@@ -104,46 +118,35 @@ def delete_inventory(id):
         (item for item in inventory if item["id"] == id),
         None
     )
-
     # Check if item exists
     if item is None:
         return jsonify({
             "error": "Inventory item not found"
         }), 404
-
     # Remove item from array
     inventory.remove(item)
-
-
     return jsonify({
         "message": "Inventory item deleted",
         "deleted_item": item
-    }), 200    
+    }), 200  
+  
 @app.route("/products/barcode/<barcode>", methods=["GET"])
 def get_product_barcode(barcode):
-
     product = fetch_product_by_barcode(barcode)
-
-
     if product is None:
         return jsonify({
             "error": "Product not found"
         }), 404
-
-
     return jsonify(product), 200
 
 @app.route("/products/search/<name>", methods=["GET"])
 def search_product(name):
 
     product = fetch_product_by_name(name)
-
-
     if product is None:
         return jsonify({
             "error": "Product not found"
         }), 404
-
 
     return jsonify(product), 200
 if __name__ == "__main__":

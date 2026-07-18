@@ -27,7 +27,7 @@ The application uses a temporary in-memory array as simulated data storage and i
 
 ## 1. Clone the repository
 
-git clone <your-github-repository-url>
+git clone https://github.com/samsonmorara-maker/inventory-management.git
 
 cd inventory-management
 ## 2. Create Environment
